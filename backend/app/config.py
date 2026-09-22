@@ -9,6 +9,7 @@ class Settings(BaseSettings):
 
     academic_api_key: str = ""
     llm_api_key: str = ""
+    semantic_scholar_api_key: str = ""
 
     upload_directory: str = "uploads"
     max_upload_size_mb: int = 20

@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from app.routes.paper_routes import router as paper_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
@@ -6,6 +7,9 @@ app = FastAPI(
     description="Backend API for the ResearchMate AI project",
     version="1.0.0"
 )
+
+# Include the paper routes
+app.include_router(paper_router)
 
 # Allow the React frontend to communicate with the backend
 app.add_middleware(

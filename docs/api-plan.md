@@ -41,3 +41,49 @@
 | Method | Endpoint | Purpose |
 |---|---|---|
 | POST | /literature-matrix/generate | Generate a literature review matrix |
+
+## Paper Search API
+
+### Endpoint
+
+GET `/papers/search`
+
+### Query Parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| query | string | Yes | Research topic or keywords |
+| limit | integer | No | Number of results; default 10 |
+| offset | integer | No | Number of results to skip |
+
+### Example Request
+
+`GET /papers/search?query=machine%20learning&limit=5`
+
+### Response Format
+
+```json
+{
+  "success": true,
+  "query": "machine learning",
+  "total": 100,
+  "offset": 0,
+  "next_offset": 5,
+  "papers": [
+    {
+      "paper_id": "paper-id",
+      "title": "Paper title",
+      "authors": [
+        {
+          "author_id": "author-id",
+          "name": "Author name"
+        }
+      ],
+      "abstract": "Paper abstract",
+      "year": 2024,
+      "doi": "10.xxxx/example",
+      "url": "https://example.com",
+      "citation_count": 25
+    }
+  ]
+}
