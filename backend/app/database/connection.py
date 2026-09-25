@@ -13,7 +13,9 @@ connect_args = {
 # Create the database engine
 engine = create_engine(
     settings.database_url,
-    connect_args=connect_args
+    connect_args={
+        "check_same_thread": False
+    }
 )
 
 

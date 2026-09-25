@@ -15,3 +15,9 @@ dist/
 .vscode/
 .DS_Store
 Thumbs.db
+
+uploads/
+faiss_index/
+*.db
+__pycache__/
+.pytest_cache/

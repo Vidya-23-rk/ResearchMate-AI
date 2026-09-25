@@ -1,36 +1,62 @@
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from app.routes.paper_routes import router as paper_router
-from fastapi.middleware.cors import CORSMiddleware
+from app.routes.document_routes import router as document_router
+from app.services.exceptions import ResearchMateException
+
+from app.services.error_handlers import (
+    researchmate_exception_handler,
+    validation_exception_handler,
+    generic_exception_handler
+)
+
+from app.routes.paper_routes import router as paper_router
+
 
 app = FastAPI(
-    title="ResearchMate AI API",
-    description="Backend API for the ResearchMate AI project",
+    title="ResearchMate AI",
+    description="Intelligent Academic Research Assistant",
     version="1.0.0"
 )
 
-# Include the paper routes
-app.include_router(paper_router)
 
-# Allow the React frontend to communicate with the backend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+# ---------------------------------------
+# Exception handlers
+# ---------------------------------------
+
+app.add_exception_handler(
+    ResearchMateException,
+    researchmate_exception_handler
 )
+
+app.add_exception_handler(
+    RequestValidationError,
+    validation_exception_handler
+)
+
+app.add_exception_handler(
+    Exception,
+    generic_exception_handler
+)
+
+
+# ---------------------------------------
+# Routes
+# ---------------------------------------
+
+app.include_router(paper_router)
+app.include_router(document_router)
 
 
 @app.get("/")
 def root():
     return {
-        "message": "Welcome to ResearchMate AI API"
+        "message": "ResearchMate AI API is running"
     }
 
 
 @app.get("/health")
-def health_check():
+def health():
     return {
-        "status": "success",
-        "message": "ResearchMate AI backend is running"
+        "status": "healthy"
     }
