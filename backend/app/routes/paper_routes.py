@@ -5,6 +5,15 @@ from fastapi import APIRouter, Query
 from app.schemas.paper import PaperSearchResponse
 from app.services.paper_search_service import paper_search_service
 
+from app.schemas.paper import (
+    PaperResponse,
+    PaperSearchResponse
+)
+
+from app.services.paper_details_service import (
+    paper_details_service
+)
+
 
 router = APIRouter(
     prefix="/papers",
@@ -34,8 +43,20 @@ def search_papers(
         description="Number of results to skip"
     )
 ):
+    
+    
     return paper_search_service.search_papers(
         query=query,
         limit=limit,
         offset=offset
+    )
+@router.get(
+    "/{paper_id}",
+    response_model=PaperResponse
+)
+def get_paper_details(
+    paper_id: str
+):
+    return paper_details_service.get_paper_details(
+        paper_id
     )
