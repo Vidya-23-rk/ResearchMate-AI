@@ -1,3 +1,4 @@
+
 import csv
 import io
 
@@ -15,10 +16,45 @@ from app.schemas.comparison import (
     PaperComparisonResponse
 )
 
-from app.services.paper_search_service import paper_search_service
-from app.services.paper_details_service import paper_details_service
-from app.services.citation_service import citation_service
-from app.services.comparison_service import comparison_service
+from app.schemas.recommendation import (
+    RecommendationResponse
+)
+
+from app.schemas.opportunity import (
+    ResearchOpportunityResponse
+)
+
+from app.schemas.evidence import (
+    EvidenceResponse
+)
+
+from app.services.paper_search_service import (
+    paper_search_service
+)
+
+from app.services.paper_details_service import (
+    paper_details_service
+)
+
+from app.services.citation_service import (
+    citation_service
+)
+
+from app.services.comparison_service import (
+    comparison_service
+)
+
+from app.services.recommendation_service import (
+    recommendation_service
+)
+
+from app.services.opportunity_service import (
+    opportunity_service
+)
+
+from app.services.evidence_service import (
+    evidence_service
+)
 
 
 router = APIRouter(
@@ -140,17 +176,44 @@ def compare_papers_csv(
 
     for paper in papers:
         writer.writerow({
-            "paper_id": paper.get("paper_id", ""),
-            "title": paper.get("title", ""),
-            "authors": ", ".join(
-                paper.get("authors", [])
+            "paper_id": paper.get(
+                "paper_id",
+                ""
             ),
-            "year": paper.get("year", ""),
-            "problem": paper.get("problem", ""),
-            "methodology": paper.get("methodology", ""),
-            "dataset": paper.get("dataset", ""),
-            "results": paper.get("results", ""),
-            "limitations": paper.get("limitations", "")
+            "title": paper.get(
+                "title",
+                ""
+            ),
+            "authors": ", ".join(
+                paper.get(
+                    "authors",
+                    []
+                )
+            ),
+            "year": paper.get(
+                "year",
+                ""
+            ),
+            "problem": paper.get(
+                "problem",
+                ""
+            ),
+            "methodology": paper.get(
+                "methodology",
+                ""
+            ),
+            "dataset": paper.get(
+                "dataset",
+                ""
+            ),
+            "results": paper.get(
+                "results",
+                ""
+            ),
+            "limitations": paper.get(
+                "limitations",
+                ""
+            )
         })
 
     output.seek(0)
@@ -165,6 +228,104 @@ def compare_papers_csv(
             )
         }
     )
+
+
+@router.get(
+    "/{paper_id}/recommendations",
+    response_model=RecommendationResponse
+)
+def get_paper_recommendations(
+    paper_id: str,
+    limit: int = Query(
+        5,
+        ge=1,
+        le=20,
+        description="Number of related papers to return"
+    )
+):
+    recommendations = (
+        recommendation_service.get_recommendations(
+            paper_id=paper_id,
+            limit=limit
+        )
+    )
+
+    return {
+        "success": True,
+        "source_paper_id": paper_id,
+        "recommendations": [
+            {
+                "paper_id": paper.get(
+                    "paper_id",
+                    ""
+                ),
+                "title": paper.get(
+                    "title",
+                    "Untitled paper"
+                ),
+                "authors": [
+                    author.get("name", "")
+                    for author in paper.get(
+                        "authors",
+                        []
+                    )
+                    if author.get("name")
+                ],
+                "abstract": paper.get(
+                    "abstract"
+                ),
+                "year": paper.get(
+                    "year"
+                ),
+                "url": paper.get(
+                    "url"
+                ),
+                "similarity_score": paper.get(
+                    "similarity_score",
+                    0.0
+                )
+            }
+            for paper in recommendations
+        ]
+    }
+
+
+@router.get(
+    "/{paper_id}/opportunities",
+    response_model=ResearchOpportunityResponse
+)
+def get_research_opportunities(
+    paper_id: str
+):
+    opportunities = (
+        opportunity_service.get_opportunities(
+            paper_id=paper_id
+        )
+    )
+
+    return {
+        "success": True,
+        "paper_id": paper_id,
+        "opportunities": opportunities
+    }
+
+
+@router.get(
+    "/{paper_id}/evidence",
+    response_model=EvidenceResponse
+)
+def get_paper_evidence(
+    paper_id: str
+):
+    evidence = evidence_service.get_evidence(
+        paper_id=paper_id
+    )
+
+    return {
+        "success": True,
+        "paper_id": paper_id,
+        "evidence": evidence
+    }
 
 
 @router.get(
