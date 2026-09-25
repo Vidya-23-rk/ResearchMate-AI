@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.orm import Session
-
+from app.services.summarization_service import summarization_service
+from app.services.llm_service import llm_service
 from app.database.connection import get_db
 from app.models.document import Document
 from app.models.document_page import DocumentPage
+
 from app.schemas.document import (
     DocumentAskRequest,
     DocumentAskResponse,
@@ -138,4 +140,72 @@ def ask_document(
         "question": question,
         "answer": llm_result["answer"],
         "sources": llm_result["sources"]
+    }
+ # =========================================================
+# PHASE 5 — DOCUMENT SUMMARIZATION
+# =========================================================
+
+@router.post(
+    "/documents/{document_id}/summarize"
+)
+def summarize_document(
+    document_id: str,
+    db: Session = Depends(get_db)
+):
+    # 1. Check whether document exists
+    document = (
+        db.query(Document)
+        .filter(Document.document_id == document_id)
+        .first()
+    )
+
+    if not document:
+        raise ResearchMateException(
+            "Document not found.",
+            status_code=404
+        )
+
+    # 2. Get extracted pages
+    pages = (
+        db.query(DocumentPage)
+        .filter(DocumentPage.document_id == document_id)
+        .order_by(DocumentPage.page_number)
+        .all()
+    )
+
+    if not pages:
+        raise ResearchMateException(
+            "No extracted text is available for this document.",
+            status_code=400
+        )
+
+    # 3. Combine page text
+    document_text = "\n\n".join(
+        f"Page {page.page_number}\n{page.text}"
+        for page in pages
+        if page.text and page.text.strip()
+    )
+
+    if not document_text.strip():
+        raise ResearchMateException(
+            "The document does not contain selectable text.",
+            status_code=400
+        )
+
+    # 4. Generate structured summary
+    result = summarization_service.summarize_document(
+        document_text=document_text
+    )
+
+    if not result["success"]:
+        raise ResearchMateException(
+            result["message"],
+            status_code=400
+        )
+
+    # 5. Return summary
+    return {
+        "success": True,
+        "document_id": document_id,
+        "summary": result["summary"]
     }

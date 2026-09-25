@@ -12,6 +12,10 @@ class LLMService:
 
         self.model = "gemini-3.5-flash-lite"
 
+    # =========================================================
+    # PHASE 4 — DOCUMENT QUESTION ANSWERING
+    # =========================================================
+
     def generate_answer(
         self,
         question: str,
@@ -87,6 +91,129 @@ Provide a concise and accurate answer.
             "answer": answer,
             "sources": sources
         }
+
+    # =========================================================
+    # PHASE 5 — DOCUMENT SUMMARIZATION
+    # =========================================================
+
+    def generate_summary(
+        self,
+        document_text: str
+    ):
+        if not document_text or not document_text.strip():
+            return {
+                "research_problem": "Not available in the document.",
+                "objective": "Not available in the document.",
+                "methodology": "Not available in the document.",
+                "dataset": "Not available in the document.",
+                "key_findings": "Not available in the document.",
+                "limitations": "Not available in the document.",
+                "conclusion": "Not available in the document."
+            }
+
+        prompt = f"""
+You are an academic research assistant.
+
+Analyze the academic paper provided below.
+
+Create a structured summary using ONLY information explicitly
+supported by the paper.
+
+DO NOT:
+- use outside knowledge
+- invent information
+- assume missing details
+- create fake datasets, methods, results, authors, or numbers
+
+If a section is not clearly available in the paper, write:
+
+"Not available in the document."
+
+Return the summary using exactly these sections:
+
+Research Problem:
+Objective:
+Methodology:
+Dataset:
+Key Findings:
+Limitations:
+Conclusion:
+
+Keep each section concise but informative.
+
+ACADEMIC PAPER:
+{document_text}
+"""
+
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=prompt
+        )
+
+        summary_text = response.text.strip()
+
+        return self._parse_summary(summary_text)
+
+    # =========================================================
+    # PHASE 5 — SUMMARY PARSER
+    # =========================================================
+
+    def _parse_summary(self, summary_text: str):
+
+        sections = {
+            "research_problem": "Not available in the document.",
+            "objective": "Not available in the document.",
+            "methodology": "Not available in the document.",
+            "dataset": "Not available in the document.",
+            "key_findings": "Not available in the document.",
+            "limitations": "Not available in the document.",
+            "conclusion": "Not available in the document."
+        }
+
+        current_section = None
+
+        section_mapping = {
+            "Research Problem": "research_problem",
+            "Objective": "objective",
+            "Methodology": "methodology",
+            "Dataset": "dataset",
+            "Key Findings": "key_findings",
+            "Limitations": "limitations",
+            "Conclusion": "conclusion"
+        }
+
+        for line in summary_text.splitlines():
+
+            line = line.strip()
+
+            if not line:
+                continue
+
+            matched_section = False
+
+            for title, key in section_mapping.items():
+
+                if line.lower().startswith(title.lower() + ":"):
+                    current_section = key
+
+                    content = line.split(":", 1)[1].strip()
+
+                    if content:
+                        sections[key] = content
+
+                    matched_section = True
+                    break
+
+            if matched_section:
+                continue
+
+            if current_section:
+                if sections[current_section] == "Not available in the document.":
+                    sections[current_section] = line
+                else:
+                    sections[current_section] += " " + line
+
+        return sections
 
 
 llm_service = LLMService()

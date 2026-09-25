@@ -15,9 +15,9 @@ class PaperResponse(BaseModel):
     abstract: Optional[str] = None
     year: Optional[int] = None
     doi: Optional[str] = None
+    venue: Optional[str] = None
     url: Optional[str] = None
     citation_count: Optional[int] = None
-
 
 class PaperSearchResponse(BaseModel):
     success: bool
@@ -26,3 +26,11 @@ class PaperSearchResponse(BaseModel):
     offset: int
     next_offset: Optional[int] = None
     papers: List[PaperResponse]
+    
+class CitationResponse(BaseModel):
+    success: bool
+    paper_id: str
+    apa: str
+    ieee: str
+    mla: str
+    venue: Optional[str] = None
