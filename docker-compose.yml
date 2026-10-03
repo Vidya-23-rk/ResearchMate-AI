@@ -1,0 +1,78 @@
+# ============================================================
+# ResearchMate AI — Docker Compose
+# ============================================================
+# Brings up the complete stack:
+#   • backend  — FastAPI + Uvicorn (port 8000)
+#   • db       — PostgreSQL 15 (port 5432, optional)
+#
+# For local SQLite development you can omit the `db` service.
+# Switch DATABASE_URL in your .env file to use PostgreSQL.
+# ============================================================
+
+version: "3.9"
+
+services:
+
+  # ----------------------------------------------------------
+  # Backend — FastAPI application
+  # ----------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: researchmate_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=${APP_ENV:-development}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./researchmate.db}
+      - SEMANTIC_SCHOLAR_API_KEY=${SEMANTIC_SCHOLAR_API_KEY:-}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - UPLOAD_DIRECTORY=/app/uploads
+      - MAX_UPLOAD_SIZE_MB=${MAX_UPLOAD_SIZE_MB:-20}
+      - MOCK_SEMANTIC_SCHOLAR=${MOCK_SEMANTIC_SCHOLAR:-false}
+    volumes:
+      # Persist uploaded PDFs and FAISS indexes across restarts
+      - uploads_data:/app/uploads
+      - faiss_data:/app/faiss_index
+      # For SQLite: persist the database file
+      - sqlite_data:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ----------------------------------------------------------
+  # Database — PostgreSQL 15 (optional; skip for SQLite)
+  # ----------------------------------------------------------
+  db:
+    image: postgres:15-alpine
+    container_name: researchmate_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-researchmate}
+      POSTGRES_USER: ${POSTGRES_USER:-researchmate}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-researchmate}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-researchmate}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# ----------------------------------------------------------
+# Named volumes
+# ----------------------------------------------------------
+volumes:
+  postgres_data:
+  uploads_data:
+  faiss_data:
+  sqlite_data:
